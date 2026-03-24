@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from aiogram import Bot
 import uvicorn
@@ -7,6 +8,14 @@ import uvicorn
 API_TOKEN = "8774294837:AAGbfx_yGbPU9GugIvPdzTBgIdVyyyDtnKk"
 bot = Bot(token=API_TOKEN)
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Разрешить запросы со всех доменов (включая GitHub Pages)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Простая база данных в памяти (в продакшне используйте Redis/PostgreSQL)
 auction_state = {
