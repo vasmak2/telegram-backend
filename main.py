@@ -8,7 +8,7 @@ import uvicorn
 import asyncio
 
 # --- НАСТРОЙКИ ---
-API_TOKEN = "ВАШ_ТОКЕН_БОТА" # Получите у @BotFather
+API_TOKEN = "8774294837:AAGbfx_yGbPU9GugIvPdzTBgIdVyyyDtnKk" # Получите у @BotFather
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 app = FastAPI()
