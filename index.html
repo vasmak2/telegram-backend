@@ -4,89 +4,125 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NFT Stars Auction</title>
-    <!-- Подключаем SDK Telegram -->
     <script src="https://telegram.org"></script>
     <style>
         :root {
-            --tg-theme-bg-color: #fff;
+            --tg-theme-bg-color: #ffffff;
             --tg-theme-button-color: #2481cc;
-            --tg-theme-button-text-color: #fff;
-            --tg-theme-text-color: #000;
+            --tg-theme-button-text-color: #ffffff;
+            --tg-theme-hint-color: #999999;
         }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--tg-theme-bg-color);
             color: var(--tg-theme-text-color);
             margin: 0; padding: 20px; text-align: center;
         }
         .nft-card {
-            border-radius: 15px; background: rgba(0,0,0,0.05); padding: 15px; margin-bottom: 20px;
+            border-radius: 20px; background: rgba(0,0,0,0.05); padding: 20px; margin-bottom: 20px;
+            border: 1px solid rgba(0,0,0,0.1);
         }
-        .nft-image { width: 100%; border-radius: 10px; max-width: 250px; }
-        .bid-info { font-size: 24px; font-weight: bold; margin: 15px 0; }
+        .nft-image { width: 100%; border-radius: 15px; max-width: 280px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .bid-info { font-size: 26px; font-weight: 800; margin: 20px 0; color: #2481cc; }
+        .hint { font-size: 14px; color: var(--tg-theme-hint-color); margin-bottom: 10px; }
+        
+        input {
+            width: 90%; padding: 12px; margin-bottom: 15px; border-radius: 10px;
+            border: 1px solid #ccc; font-size: 16px; outline: none;
+        }
+        
         .bid-button {
             background-color: var(--tg-theme-button-color);
             color: var(--tg-theme-button-text-color);
-            border: none; border-radius: 10px; padding: 15px 30px;
-            font-size: 18px; cursor: pointer; width: 100%;
+            border: none; border-radius: 12px; padding: 16px;
+            font-size: 18px; font-weight: bold; cursor: pointer; width: 100%;
+            transition: opacity 0.2s;
         }
-        .bid-button:disabled { opacity: 0.5; }
+        .bid-button:disabled { opacity: 0.6; cursor: not-allowed; }
     </style>
 </head>
 <body>
     <div class="nft-card">
         <img src="https://via.placeholder.com" alt="NFT Gift" class="nft-image">
-        <h2>Telegram Gift #123</h2>
-        <div class="bid-info">Текущая ставка: <span id="current-bid">100</span> ⭐️</div>
+        <h2 id="item-name">Telegram Gift #123</h2>
+        <div class="hint">Минимальный шаг — любая сумма выше текущей</div>
+        <div class="bid-info"><span id="current-bid">...</span> ⭐️</div>
     </div>
 
-    <input type="number" id="bid-amount" placeholder="Ваша ставка" style="width: 80%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ccc;">
-    <button id="main-button" class="bid-button">Сделать ставку</button>
+    <input type="number" id="bid-amount" placeholder="Сумма доплаты (звёзды)" inputmode="numeric">
+    <button id="main-button" class="bid-button">Повысить ставку</button>
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Расширяем на весь экран
-
         const bidInput = document.getElementById('bid-amount');
         const bidButton = document.getElementById('main-button');
-        const API_URL = "https://telegram-backend-94bo.onrender.com"; // Замените на URL вашего FastAPI
+        const bidDisplay = document.getElementById('current-bid');
+        
+        // URL твоего бэкенда на Render
+        const API_URL = "https://telegram-backend-94bo.onrender.com"; 
 
+        tg.expand();
+        tg.ready();
+
+        // 1. Функция получения актуальной ставки из БД при входе
+        async function fetchCurrentStatus() {
+            try {
+                const response = await fetch(`${API_URL}/`);
+                const data = await response.json();
+                bidDisplay.innerText = data.current_bid;
+            } catch (e) {
+                console.error("Ошибка загрузки данных:", e);
+                bidDisplay.innerText = "Ошибка";
+            }
+        }
+
+        // Запускаем обновление при старте
+        fetchCurrentStatus();
+
+        // 2. Обработка клика по кнопке
         bidButton.addEventListener('click', async () => {
             const amount = parseInt(bidInput.value);
-            const currentBid = parseInt(document.getElementById('current-bid').innerText);
-
-            if (amount <= currentBid) {
-                tg.showAlert("Ставка должна быть выше текущей!");
+            
+            if (!amount || amount <= 0) {
+                tg.showAlert("Введите корректное число звёзд");
                 return;
             }
 
             bidButton.disabled = true;
+            bidButton.innerText = "Подготовка счета...";
 
             try {
-                // 1. Запрос к вашему API за ссылкой на оплату
                 const response = await fetch(`${API_URL}/create-bid-invoice`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        user_id: tg.initDataUnsafe.user?.id,
+                        user_id: tg.initDataUnsafe.user?.id || 0,
                         amount: amount
                     })
                 });
 
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || "Ошибка сервера");
+                }
+
                 const data = await response.json();
 
-                // 2. Открытие нативного окна оплаты Telegram
+                // 3. Открываем нативную оплату Telegram
                 tg.openInvoice(data.invoice_link, (status) => {
                     bidButton.disabled = false;
+                    bidButton.innerText = "Повысить ставку";
+                    
                     if (status === 'paid') {
-                        tg.showAlert("Ставка принята! Ожидайте обновления.");
-                    } else if (status === 'cancelled') {
-                        tg.showPopup({ message: "Оплата отменена" });
+                        tg.showAlert("Оплата прошла! Ваша ставка обновится в течение пары секунд.");
+                        fetchCurrentStatus(); // Обновляем цифру на экране
+                        bidInput.value = "";
                     }
                 });
             } catch (error) {
-                tg.showAlert("Ошибка связи с сервером");
+                tg.showAlert("Ошибка: " + error.message);
                 bidButton.disabled = false;
+                bidButton.innerText = "Повысить ставку";
             }
         });
     </script>
