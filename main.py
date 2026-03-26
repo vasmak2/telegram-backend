@@ -8,10 +8,16 @@ import uvicorn
 import asyncio
 from dotenv import load_dotenv
 
+DATABASE_URL = os.getenv("DATABASE_URL")
+
 load_dotenv()
 
 # --- НАСТРОЙКИ ---
 API_TOKEN = os.getenv("TOKEN_API")
+
+if not API_TOKEN:
+    print("КРИТИЧЕСКАЯ ОШИБКА: Переменная TOKEN_API не найдена в настройках Render!")
+    
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 app = FastAPI()
