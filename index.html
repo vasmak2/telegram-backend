@@ -11,6 +11,7 @@
             --tg-theme-button-color: #2481cc;
             --tg-theme-button-text-color: #0e1621;
             --tg-theme-hint-color: #215171;
+            --tg-theme-background-color: #3e6480;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -32,7 +33,7 @@
         margin-bottom: 20px;
         border-radius: 12px;
         /* Используем цвета темы Telegram */
-        background-color: var(#3e6480);
+        background-color: var(--tg-theme-background-color, #3e6480);
         color: var(--tg-theme-text-color, #000000);
 
         /* Убираем стандартную рамку и добавляем свою тонкую */
