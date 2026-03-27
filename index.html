@@ -9,7 +9,7 @@
         :root {
             --tg-theme-bg-color: #17212b;
             --tg-theme-button-color: #2481cc;
-            --tg-theme-button-text-color: #0e1621;
+            --tg-theme-button-text-color: #2480ca;
             --tg-theme-hint-color: #215171;
             --tg-theme-background-color: #3e6480;
             --tg-theme-input-color: #6aa1c5;
@@ -137,8 +137,20 @@ input::placeholder {
 
                 // 3. Открываем нативную оплату Telegram
                 tg.openInvoice(data.invoice_link, (status) => {
-                    bidButton.disabled = false;
-                    bidButton.innerText = "Повысить ставку";
+                      tg.openInvoice(data.invoice_link, (status) => {
+            if (status === 'paid') {
+                tg.showAlert("✅ Оплата прошла успешно! Ваша ставка принята.");
+                // Здесь можно обновить цифру на экране
+                fetchCurrentStatus();
+                } else if (status === 'cancelled') {
+                tg.showPopup({ message: "❌ Оплата отменена" });
+                } else if (status === 'failed') {
+                tg.showAlert("⚠️ Произошла ошибка при проведении платежа.");
+                }
+
+            // Возвращаем кнопку в рабочее состояние
+                bidButton.disabled = false;
+                });
 
                     if (status === 'paid') {
                         tg.showAlert("Оплата прошла! Ваша ставка обновится в течение пары секунд.");
