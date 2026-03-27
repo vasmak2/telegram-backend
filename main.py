@@ -80,7 +80,7 @@ async def start_command(message: types.Message):
     
     await message.answer(
         f"Привет, {message.from_user.first_name}! 👋\n\n"
-        f"Добро пожаловать в аукцион Stars. Нажми на кнопку ниже, чтобы посмотреть лот и сделать свою ставку.",
+        f"Добро пожаловать в аукцион. Нажми на кнопку ниже, чтобы посмотреть лот и сделать свою ставку.",
         reply_markup=markup
     )
 
