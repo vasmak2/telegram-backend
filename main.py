@@ -9,6 +9,8 @@ from aiogram.types import LabeledPrice
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, Column, Integer, String, BigInteger
 from sqlalchemy.orm import sessionmaker, declarative_base
+from aiogram.filters import Command
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
 load_dotenv()
 
