@@ -1,6 +1,7 @@
 import os
 import asyncio
 import uvicorn
+import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -161,3 +162,20 @@ async def startup_event():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+async def keep_alive():
+    """Фоновая задача, которая пингует сервер раз в 10 минут"""
+    url = "https://telegram-backend-0l5i.onrender.com" # Замени на свой URL
+    async with httpx.AsyncClient() as client:
+        while True:
+            try:
+                await client.get(url)
+                print("Ping success: Server is awake!")
+            except Exception as e:
+                print(f"Ping failed: {e}")
+            await asyncio.sleep(600) # 600 секунд = 10 минут
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(run_bot())
+    asyncio.create_task(keep_alive()) # Запускаем само-пинг
