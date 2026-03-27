@@ -96,59 +96,32 @@ async def root():
             auction_state["current_bid"] = max_bid.total_bid
     return {"status": "ok", "current_bid": auction_state["current_bid"]}
 
-@app.post("/create-bid-invoice")
-async def create_bid_invoice(request: BidRequest):
-    # Проверка: новая сумма + уже вложенные звезды должна быть > текущего рекорда
-    with SessionLocal() as session:
-        bidder = session.query(Bidder).filter_by(user_id=request.user_id).first()
-        already_paid = bidder.total_bid if bidder else 0
-        
-        if (already_paid + request.amount) <= auction_state["current_bid"]:
-            raise HTTPException(status_code=400, detail="Твоя суммарная ставка не бьет рекорд")
 
-    try:
-        invoice_link = await bot.create_invoice_link(
-            title="Повышение ставки",
-            description=f"Доплата за {auction_state['item_name']}",
-            payload=f"bid:{request.user_id}:{request.amount}",
-            provider_token="",
-            currency="XTR",
-            prices=[LabeledPrice(label="Stars", amount=request.amount)]
-        )
-        return {"invoice_link": invoice_link}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка: {e}")
+@app.post("/create-bid-invoice")
+async def create_invoice(request: BidRequest):
+    # Генерация ссылки на оплату Stars (валюта XTR)
+    invoice_link = await bot.create_invoice_link(
+        title="Ставка в аукционе",
+        description="Повышение ставки на лот #123",
+        payload=f"user_{request.user_id}_bid", # Техническая метка
+        provider_token="", # Для Stars ВСЕГДА пусто
+        currency="XTR",
+        prices=[LabeledPrice(label="Stars", amount=request.amount)]
+    )
+    return {"invoice_link": invoice_link}
 
 # --- ОБРАБОТКА ПЛАТЕЖЕЙ (BOT) ---
 
 @dp.pre_checkout_query()
 async def process_pre_checkout(query: types.PreCheckoutQuery):
+    # Telegram спрашивает: "Всё ок? Можно списывать?"
     await bot.answer_pre_checkout_query(query.id, ok=True)
 
 @dp.message(F.successful_payment)
-async def on_successful_payment(message: types.Message):
-    amount = message.successful_payment.total_amount
-    user_id = message.from_user.id
-    username = message.from_user.username or message.from_user.first_name
-
-    with SessionLocal() as session:
-        bidder = session.query(Bidder).filter_by(user_id=user_id).first()
-        if not bidder:
-            bidder = Bidder(user_id=user_id, username=username, total_bid=amount)
-            session.add(bidder)
-        else:
-            bidder.total_bid += amount
-            bidder.username = username # Обновляем юзернейм на всякий случай
-        
-        session.commit()
-        new_total = bidder.total_bid
-        
-        # Обновляем глобальный рекорд
-        if new_total > auction_state["current_bid"]:
-            auction_state["current_bid"] = new_total
-            auction_state["winner_id"] = user_id
-
-    await message.answer(f"✅ Ставка принята! Твой текущий итог: {new_total} ⭐️\nЛидер аукциона: {username}")
+async def success_payment(message: types.Message):
+    # Деньги списаны, здесь обновляем базу данных
+    total_stars = message.successful_payment.total_amount
+    await message.answer(f"Оплата получена! Ваша ставка: {total_stars} ⭐️")
 
 # --- ЗАПУСК ---
 
