@@ -26,11 +26,35 @@
         .bid-info { font-size: 26px; font-weight: 800; margin: 20px 0; color: #2481cc; }
         .hint { font-size: 14px; color: var(--tg-theme-hint-color); margin-bottom: 10px; }
 
-        input {
-            width: 90%; padding: 12px; margin-bottom: 15px; border-radius: 10px;
-            border: 1px solid #7589f6; font-size: 16px; outline: none;
-        }
-        
+    input {
+        width: 90%;
+        padding: 14px;
+        margin-bottom: 20px;
+        border-radius: 12px;
+        /* Используем цвета темы Telegram */
+        background-color: var(--tg-theme-secondary-bg-color, #2480ca); 
+        color: var(--tg-theme-text-color, #000000);
+    
+        /* Убираем стандартную рамку и добавляем свою тонкую */
+        border: 1px solid rgba(0, 0, 0, 0.1); 
+        font-size: 18px;
+        font-weight: 600;
+        text-align: center;
+        outline: none;
+        transition: border-color 0.3s ease;
+    }
+
+/* Эффект при нажатии (фокусе) */
+input:focus {
+    border-color: var(--tg-theme-button-color, #2481cc);
+}
+
+/* Цвет текста-подсказки (placeholder) */
+input::placeholder {
+    color: var(--tg-theme-hint-color, #999);
+    font-weight: 400;
+}
+
         .bid-button {
             background-color: var(--tg-theme-button-color);
             color: var(--tg-theme-button-text-color);
@@ -57,9 +81,9 @@
         const bidInput = document.getElementById('bid-amount');
         const bidButton = document.getElementById('main-button');
         const bidDisplay = document.getElementById('current-bid');
-        
+
         // URL твоего бэкенда на Render
-        const API_URL = "https://telegram-backend-94bo.onrender.com"; 
+        const API_URL = "https://telegram-backend-94bo.onrender.com";
 
         tg.expand();
         tg.ready();
@@ -82,7 +106,7 @@
         // 2. Обработка клика по кнопке
         bidButton.addEventListener('click', async () => {
             const amount = parseInt(bidInput.value);
-            
+
             if (!amount || amount <= 0) {
                 tg.showAlert("Введите корректное число звёзд");
                 return;
@@ -112,7 +136,7 @@
                 tg.openInvoice(data.invoice_link, (status) => {
                     bidButton.disabled = false;
                     bidButton.innerText = "Повысить ставку";
-                    
+
                     if (status === 'paid') {
                         tg.showAlert("Оплата прошла! Ваша ставка обновится в течение пары секунд.");
                         fetchCurrentStatus(); // Обновляем цифру на экране
