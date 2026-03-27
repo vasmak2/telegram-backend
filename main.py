@@ -15,6 +15,7 @@ load_dotenv()
 # --- НАСТРОЙКИ И БД ---
 API_TOKEN = os.getenv("TOKEN_API")
 RAW_DB_URL = os.getenv("DATABASE_URL")
+WEB_APP_URL = https://vasmak2.github.io/telegram-backend/
 
 if not API_TOKEN:
     print("КРИТИЧЕСКАЯ ОШИБКА: Переменная TOKEN_API не найдена!")
@@ -62,6 +63,24 @@ auction_state = {
 class BidRequest(BaseModel):
     user_id: int
     amount: int
+
+@dp.message(Command("start"))
+async def start_command(message: types.Message):
+    # Создаем красивую инлайн-кнопку
+    markup = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="🚀 Открыть Аукцион", 
+                web_app=WebAppInfo(url=WEB_APP_URL)
+            )
+        ]
+    ])
+    
+    await message.answer(
+        f"Привет, {message.from_user.first_name}! 👋\n\n"
+        f"Добро пожаловать в аукцион Stars. Нажми на кнопку ниже, чтобы посмотреть лот и сделать свою ставку.",
+        reply_markup=markup
+    )
 
 # --- API ДЛЯ MINI APP ---
 
