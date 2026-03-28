@@ -153,8 +153,7 @@ async def success_payment(message: types.Message):
 async def run_bot():
     # Удаляем вебхуки и старые запросы, чтобы избежать конфликта при перезапуске
     await bot.delete_webhook(drop_pending_updates=True)
-    # Запуск
-    await dp.start_polling(bot)
+    await dp.start_polling(bot, skip_updates=True)
 
 
 @app.on_event("startup")
