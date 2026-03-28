@@ -1,9 +1,7 @@
 import os
 import asyncio
 import logging
-import urllib.parse
 import hmac
-import hashlib
 import json
 import uvicorn
 from contextlib import asynccontextmanager
