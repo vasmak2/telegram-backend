@@ -1,6 +1,5 @@
 aiogram
 asyncio
-contextlib
 fastapi
 hashlib
 hmac
