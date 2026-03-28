@@ -1,7 +1,6 @@
 aiogram
 asyncio
 fastapi
-hashlib
 hmac
 httpx
 logging
