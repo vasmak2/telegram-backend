@@ -139,14 +139,14 @@ input::placeholder {
                 tg.openInvoice(data.invoice_link, (status) => {
                       tg.openInvoice(data.invoice_link, (status) => {
             if (status === 'paid') {
-                tg.showAlert("✅ Оплата прошла успешно! Ваша ставка принята.");
-                // Здесь можно обновить цифру на экране
+                tg.showAlert("✅ Ставка принята!");
                 fetchCurrentStatus();
-                } else if (status === 'cancelled') {
-                tg.showPopup({ message: "❌ Оплата отменена" });
-                } else if (status === 'failed') {
-                tg.showAlert("⚠️ Произошла ошибка при проведении платежа.");
-                }
+                bidInput.value = "";
+            } else if (status === 'failed') {
+                // ЭТОТ БЛОК сработает, если у юзера реально не хватило Stars
+                // или произошел технический сбой оплаты в самом Telegram
+                tg.showAlert("❌ Ошибка оплаты. Проверьте баланс Stars в настройках Telegram.");
+            }
 
             // Возвращаем кнопку в рабочее состояние
                 bidButton.disabled = false;
