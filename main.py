@@ -124,8 +124,10 @@ async def success_payment(message: types.Message):
     await message.answer(f"Оплата получена! Ваша ставка: {total_stars} ⭐️")
 
 # --- ЗАПУСК ---
-
 async def run_bot():
+    # Удаляем вебхуки и старые запросы, чтобы избежать конфликта при перезапуске
+    await bot.delete_webhook(drop_pending_updates=True)
+    # Запуск
     await dp.start_polling(bot)
 
 @app.on_event("startup")
