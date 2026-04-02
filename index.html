@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NFT Stars Auction</title>
-    <script src="https://telegram.org"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
             --tg-theme-bg-color: #17212b;
@@ -17,8 +17,8 @@
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
+            background-color: var(--tg-theme-bg-color, #17212b);
+            color: var(--tg-theme-text-color, #ffffff);
             margin: 0; padding: 20px; text-align: center;
         }
         .nft-card {
@@ -29,38 +29,34 @@
         .bid-info { font-size: 26px; font-weight: 800; margin: 20px 0; color: #247fc8; }
         .hint { font-size: 14px; color: var(--tg-theme-hint-color); margin-bottom: 10px; }
 
-    input {
-        width: 90%;
-        padding: 14px;
-        margin-bottom: 20px;
-        border-radius: 12px;
-        /* Используем цвета темы Telegram */
-        background-color: var(--tg-theme-input-color2, #3e6480);
-        color: var(--tg-theme-text-color, #247fc8);
+        input {
+            width: 90%;
+            padding: 14px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            background-color: var(--tg-theme-input-color2, #3e6480);
+            color: var(--tg-theme-text-color, #247fc8);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box; /* Чтобы padding не ломал ширину */
+        }
 
-        /* Убираем стандартную рамку и добавляем свою тонкую */
-        border: 1px solid rgba(0, 0, 0, 0.1);
-        font-size: 18px;
-        font-weight: 600;
-        text-align: center;
-        outline: none;
-        transition: border-color 0.3s ease;
-    }
+        input:focus {
+            border-color: var(--tg-theme-button-color, #2481cc);
+        }
 
-/* Эффект при нажатии (фокусе) */
-input:focus {
-    border-color: var(--tg-theme-button-color, #2481cc);
-}
-
-/* Цвет текста-подсказки (placeholder) */
-input::placeholder {
-    color: var(--tg-theme-input-color2, #7cb3dd);
-    font-weight: 400;
-}
+        input::placeholder {
+            color: var(--tg-theme-input-color2, #7cb3dd);
+            font-weight: 400;
+        }
 
         .bid-button {
-            background-color: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
+            background-color: var(--tg-theme-button-color, #247ec6);
+            color: var(--tg-theme-button-text-color, #ffffff);
             border: none; border-radius: 12px; padding: 16px;
             font-size: 18px; font-weight: bold; cursor: pointer; width: 100%;
             transition: opacity 0.2s;
@@ -70,13 +66,13 @@ input::placeholder {
 </head>
 <body>
     <div class="nft-card">
-        <img src="https://via.placeholder.com" alt="NFT Gift" class="nft-image">
+        <img src="https://via.placeholder.com/280" alt="NFT Gift" class="nft-image">
         <h2 id="item-name">Telegram Gift #123</h2>
         <div class="hint">Минимальный шаг — любая сумма выше текущей</div>
         <div class="bid-info"><span id="current-bid">...</span> ⭐️</div>
     </div>
 
-    <input type="number" id="bid-amount" placeholder="Сумма доплаты (звёзды)" inputmode="numeric">
+    <input type="number" id="bid-amount" placeholder="Сумма доплаты (звёзды)" inputmode="numeric" min="1">
     <button id="main-button" class="bid-button">Повысить ставку</button>
 
     <script>
@@ -85,13 +81,13 @@ input::placeholder {
         const bidButton = document.getElementById('main-button');
         const bidDisplay = document.getElementById('current-bid');
 
-        // URL твоего бэкенда на Render
+        // URL бэкенда на Render
         const API_URL = "https://telegram-backend-0l5i.onrender.com";
 
         tg.expand();
         tg.ready();
 
-        // 1. Функция получения актуальной ставки из БД при входе
+        // 1. Функция получения актуальной ставки из БД
         async function fetchCurrentStatus() {
             try {
                 const response = await fetch(`${API_URL}/`);
@@ -99,12 +95,17 @@ input::placeholder {
                 bidDisplay.innerText = data.current_bid;
             } catch (e) {
                 console.error("Ошибка загрузки данных:", e);
-                bidDisplay.innerText = "Ошибка";
+                // Не перезаписываем текст ошибкой при каждом неудачном поллинге, 
+                // чтобы не пугать юзера, если сеть моргнула
+                if (bidDisplay.innerText === "...") {
+                    bidDisplay.innerText = "—";
+                }
             }
         }
 
-        // Запускаем обновление при старте
+        // Запускаем обновление при старте и ставим таймер (каждые 5 секунд)
         fetchCurrentStatus();
+        setInterval(fetchCurrentStatus, 5000);
 
         // 2. Обработка клика по кнопке
         bidButton.addEventListener('click', async () => {
@@ -115,15 +116,18 @@ input::placeholder {
                 return;
             }
 
+            // Блокируем кнопку на время запроса
             bidButton.disabled = true;
+            const originalText = bidButton.innerText;
             bidButton.innerText = "Подготовка счета...";
 
             try {
+                // ВАЖНО: Отправляем initData для валидации на бэкенде
                 const response = await fetch(`${API_URL}/create-bid-invoice`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        user_id: tg.initDataUnsafe.user?.id || 0,
+                        initData: tg.initData, 
                         amount: amount
                     })
                 });
@@ -137,31 +141,26 @@ input::placeholder {
 
                 // 3. Открываем нативную оплату Telegram
                 tg.openInvoice(data.invoice_link, (status) => {
-                      tg.openInvoice(data.invoice_link, (status) => {
-            if (status === 'paid') {
-                tg.showAlert("✅ Ставка принята!");
-                fetchCurrentStatus();
-                bidInput.value = "";
-            } else if (status === 'failed') {
-                // ЭТОТ БЛОК сработает, если у юзера реально не хватило Stars
-                // или произошел технический сбой оплаты в самом Telegram
-                tg.showAlert("❌ Ошибка оплаты. Проверьте баланс Stars в настройках Telegram.");
-            }
-
-            // Возвращаем кнопку в рабочее состояние
-                bidButton.disabled = false;
-                });
-
                     if (status === 'paid') {
-                        tg.showAlert("Оплата прошла! Ваша ставка обновится в течение пары секунд.");
-                        fetchCurrentStatus(); // Обновляем цифру на экране
+                        tg.showAlert("✅ Ставка успешно принята!");
+                        fetchCurrentStatus(); // Сразу обновляем цифру на экране
                         bidInput.value = "";
+                    } else if (status === 'failed') {
+                        tg.showAlert("❌ Ошибка оплаты. Проверьте баланс Stars в настройках Telegram.");
+                    } else if (status === 'cancelled') {
+                        // Если юзер сам закрыл окно оплаты, можно ничего не делать или показать легкое уведомление
+                        console.log("Оплата отменена пользователем");
                     }
+
+                    // Возвращаем кнопку в исходное состояние
+                    bidButton.disabled = false;
+                    bidButton.innerText = originalText;
                 });
+
             } catch (error) {
                 tg.showAlert("Ошибка: " + error.message);
                 bidButton.disabled = false;
-                bidButton.innerText = "Повысить ставку";
+                bidButton.innerText = originalText;
             }
         });
     </script>
